@@ -41,10 +41,10 @@ API_KEY = "dbe2bec1-0dbf-11f1-bcb0-0200cd936042"
 
 def get_db_connection():
     return mysql.connector.connect(
-        host="localhost",
+        host="mysql.railway.internal",
         user="root",
-        password="light",
-        database="streetlight_db"
+        password="QhtOCgWxilFxjsfqLZAAJpyTjZkFutQR",
+        database="railway"
     )
 
 # @app.errorhandler(RequestEntityTooLarge)
@@ -479,6 +479,7 @@ def admin_complaints():
         database="streetlight_db"
     )
 
+   
     cursor = db.cursor(dictionary=True)
     cursor.execute("SELECT * FROM complaints")
     complaints = cursor.fetchall()
