@@ -24,8 +24,8 @@ import psycopg2.extras
 pytesseract_path = r"C:\Users\rayan\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
 
 app = Flask(__name__)
-# app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024  # 500MB ALLOWED
-app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024  # 500MB ALLOWED
+# app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
 app.secret_key = "streetlight_secret_key"
 
