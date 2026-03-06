@@ -42,11 +42,12 @@ API_KEY = "dbe2bec1-0dbf-11f1-bcb0-0200cd936042"
 
 def get_db_connection():
     return psycopg2.connect(
-        host="db.ohtpdxrtodcdjevqwujd.supabase.co",
+        host="aws-1-ap-south-1.pooler.supabase.com",
         database="postgres",
-        user="postgres",
+        user="postgres.ohtpdxrtodcdjevqwujd",
         password="Qi6HqIeoJV7NTJ3R",
-        port="5432"
+        port="6543",
+        sslmode="require"
     )
 
 # @app.errorhaaseityTooLarge)
