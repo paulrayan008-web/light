@@ -65,7 +65,8 @@ def get_db_connection():
 # =============================
 
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 
 # model = models.mobilenet_v2(pretrained=True)
 # from torchvision.models import mobilenet_v2, MobileNet_V2_Weights
@@ -122,10 +123,17 @@ class CNN(nn.Module):
         return x
 
 # ✅ Load NEW MODEL
-model = CNN().to(device)
-model.load_state_dict(torch.load("streetlight_multiclass.pth", map_location=device))
-model.eval()
+# model = CNN().to(device)
+# model.load_state_dict(torch.load("streetlight_multiclass.pth", map_location=device))
+# model.eval()
+model = None
 
+def load_model():
+    global model
+    if model is None:
+        model = CNN().to(device)
+        model.load_state_dict(torch.load("streetlight_multiclass.pth", map_location=device))
+        model.eval()
 transform = transforms.Compose([
     transforms.Resize((128,128)),
     transforms.RandomHorizontalFlip(),
