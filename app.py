@@ -46,7 +46,7 @@ def get_db_connection():
         database="postgres",
         user="postgres.ohtpdxrtodcdjevqwujd",
         password="Qi6HqIeoJV7NTJ3R",
-        port="6543",
+        port="5432",
         sslmode="require"
     )
 
