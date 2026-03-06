@@ -24,7 +24,8 @@ import psycopg2.extras
 pytesseract_path = r"C:\Users\rayan\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024  # 500MB ALLOWED
+# app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024  # 500MB ALLOWED
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
 app.secret_key = "streetlight_secret_key"
 
@@ -67,19 +68,19 @@ def get_db_connection():
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # model = models.mobilenet_v2(pretrained=True)
-from torchvision.models import mobilenet_v2, MobileNet_V2_Weights
+# from torchvision.models import mobilenet_v2, MobileNet_V2_Weights
 
-weights = MobileNet_V2_Weights.DEFAULT
-model = mobilenet_v2(weights=weights)
+# weights = MobileNet_V2_Weights.DEFAULT
+# model = mobilenet_v2(weights=weights)
 
-# Freeze base layers
-for param in model.parameters():
-    param.requires_grad = False
+# # Freeze base layers
+# for param in model.parameters():
+#     param.requires_grad = False
 
-# Modify classifier
-model.classifier[1] = nn.Linear(model.last_channel, 2)
+# # Modify classifier
+# model.classifier[1] = nn.Linear(model.last_channel, 2)
 
-model = model.to(device)
+# model = model.to(device)
 
 class CNN(nn.Module):
     def __init__(self):
