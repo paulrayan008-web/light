@@ -7,4 +7,4 @@ reportlab
 torch
 torchvision
 numpy
-opencv-python
+opencv-python-headless
