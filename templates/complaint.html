@@ -4,174 +4,247 @@
     <title>Street Light Complaint</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/complaint.css') }}">
 </head>
+
 <body>
 
 <div class="container">
 
-    <h2>Street Light Complaint Registration</h2>
+<h2>Street Light Complaint Registration</h2>
 
-    <form method="POST" enctype="multipart/form-data">
-        <!-- HOME BUTTON -->
+<form method="POST" enctype="multipart/form-data">
+
+<!-- HOME BUTTON -->
 <div style="text-align:right; margin-bottom:15px;">
     <a href="{{ url_for('home') }}">
         <button type="button">🏠 Home</button>
     </a>
 </div>
 
-        <!-- POST ID -->
-        <label>Post ID</label>
-        <input type="text" name="post_id" placeholder="Enter Post ID" required>
-        <br><br>
+<!-- POST ID -->
+<label>Post ID</label>
+<input type="text" name="post_id" placeholder="Enter Post ID" required>
+<br><br>
 
-        {% if area %}
-            <p><strong>Area:</strong> {{ area }}</p>
-            <p><strong>Assigned Employee:</strong> {{ employee_name }}</p>
-        {% endif %}
+{% if area %}
+<p><strong>Area:</strong> {{ area }}</p>
+<p><strong>Assigned Employee:</strong> {{ employee_name }}</p>
+{% endif %}
 
-        <!-- CAMERA SECTION -->
-        <h3>Live Camera</h3>
-        <video id="camera" width="300" autoplay playsinline></video>
-        <br>
-        <button type="button" onclick="captureImage()">Capture Image</button>
+<!-- CAMERA SECTION -->
+<h3>Live Camera</h3>
 
-        <canvas id="canvas" style="display:none;"></canvas>
-        <br>
-        <img id="preview" width="300">
-        <input type="hidden" name="captured_image" id="captured_image">
+<video id="camera" width="300" autoplay playsinline></video>
+<br><br>
 
-        <hr>
+<button type="button" onclick="captureImage()">Capture Image</button>
+<button type="button" onclick="switchCamera()">Switch Camera</button>
 
-        <!-- UPLOAD SECTION -->
-        <h3>Or Upload Image</h3>
-        <input type="file" name="image" accept="image/*" onchange="compressUpload(event)">
-        <br><br>
-        <img id="upload_preview" width="300">
+<canvas id="canvas" style="display:none;"></canvas>
 
-        <hr>
+<br><br>
 
-        <!-- FAULT SELECTION -->
-        <h3>Select Faults</h3>
-        <label><input type="checkbox" name="fault1" value="Broken Light"> Broken Light</label><br>
-        <label><input type="checkbox" name="fault2" value="Flickering"> Flickering</label><br>
-        <label><input type="checkbox" name="fault3" value="Pole Damage"> Pole Damage</label><br>
+<img id="preview" width="300">
 
-        <br>
+<input type="hidden" name="captured_image" id="captured_image">
 
-        <!-- SUGGESTION -->
-        <textarea name="suggestion" placeholder="Enter Suggestion"></textarea>
+<hr>
 
-        <br><br>
+<!-- UPLOAD IMAGE -->
+<h3>Or Upload Image</h3>
 
-        <button type="submit">Submit Complaint</button>
+<input type="file" name="image" accept="image/*" onchange="compressUpload(event)">
+<br><br>
 
-    </form>
+<img id="upload_preview" width="300">
 
-    <!-- AI RESULT -->
-    {% if fault %}
-        <hr>
-        <h3>AI Detection Result</h3>
-        <p><strong>Status:</strong> {{ fault }}</p>
-        <p><strong>Confidence:</strong> {{ confidence }}%</p>
-        <img src="{{ image_path }}" width="300">
-        <br><br>
- <a href="{{ url_for('generate_report', id=id) }}">
-    <button type="button">Generate Report</button>
+<hr>
+
+<!-- FAULT SELECTION -->
+<h3>Select Faults</h3>
+
+<label>
+<input type="checkbox" name="fault1" value="Broken Light">
+Broken Light
+</label><br>
+
+<label>
+<input type="checkbox" name="fault2" value="Flickering">
+Flickering
+</label><br>
+
+<label>
+<input type="checkbox" name="fault3" value="Pole Damage">
+Pole Damage
+</label><br>
+
+<br>
+
+<!-- SUGGESTION -->
+<textarea name="suggestion" placeholder="Enter Suggestion"></textarea>
+
+<br><br>
+
+<button type="submit">Submit Complaint</button>
+
+</form>
+
+<!-- AI RESULT -->
+{% if fault %}
+
+<hr>
+
+<h3>AI Detection Result</h3>
+
+<p><strong>Status:</strong> {{ fault }}</p>
+
+<p><strong>Confidence:</strong> {{ confidence }}%</p>
+
+<img src="{{ image_path }}" width="300">
+
+<br><br>
+
+<a href="{{ url_for('generate_report', id=id) }}">
+<button type="button">Generate Report</button>
 </a>
- {% endif %}
 
-    {% if success %}
-        <script>alert("{{ success }}");</script>
-    {% endif %}
+{% endif %}
+
+{% if success %}
+<script>
+alert("{{ success }}");
+</script>
+{% endif %}
 
 </div>
 
 <script>
-// START CAMERA
-navigator.mediaDevices.getUserMedia({ video: true })
-.then(stream => {
-    document.getElementById('camera').srcObject = stream;
+
+let currentStream;
+let currentFacingMode = "environment"; // back camera first
+
+function startCamera(){
+
+if(currentStream){
+currentStream.getTracks().forEach(track => track.stop());
+}
+
+navigator.mediaDevices.getUserMedia({
+video:{facingMode:currentFacingMode}
 })
-.catch(error => {
-    alert("Camera not supported or permission denied!");
+.then(stream=>{
+currentStream=stream;
+document.getElementById("camera").srcObject=stream;
+})
+.catch(error=>{
+alert("Camera access denied or not supported!");
 });
 
-// CAPTURE IMAGE WITH COMPRESSION
-function captureImage() {
-
-    let video = document.getElementById('camera');
-    let canvas = document.getElementById('canvas');
-    let context = canvas.getContext('2d');
-
-    // 🔥 Resize Large Image
-    const maxWidth = 1280;
-    let width = video.videoWidth;
-    let height = video.videoHeight;
-
-    if (width > maxWidth) {
-        height = height * (maxWidth / width);
-        width = maxWidth;
-    }
-
-    canvas.width = width;
-    canvas.height = height;
-
-    context.drawImage(video, 0, 0, width, height);
-
-    // 🔥 Compress to JPEG (0.6 quality)
-    let imageData = canvas.toDataURL("image/jpeg", 0.6);
-
-    document.getElementById('captured_image').value = imageData;
-    document.getElementById('preview').src = imageData;
-
-    alert("Image Captured & Compressed Successfully!");
 }
 
-// COMPRESS UPLOADED IMAGE BEFORE SUBMIT
-function compressUpload(event) {
+// SWITCH CAMERA
+function switchCamera(){
 
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-
-    reader.onload = function(e) {
-        const img = new Image();
-
-        img.onload = function() {
-
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
-
-            const maxWidth = 1280;
-            let width = img.width;
-            let height = img.height;
-
-            if (width > maxWidth) {
-                height = height * (maxWidth / width);
-                width = maxWidth;
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-
-            ctx.drawImage(img, 0, 0, width, height);
-
-            // 🔥 Compress
-            let compressedData = canvas.toDataURL("image/jpeg", 0.6);
-
-            document.getElementById('upload_preview').src = compressedData;
-            document.getElementById('captured_image').value = compressedData;
-        }
-
-        img.src = e.target.result;
-    }
-
-    reader.readAsDataURL(file);
+if(currentFacingMode==="environment"){
+currentFacingMode="user";
+}else{
+currentFacingMode="environment";
 }
+
+startCamera();
+
+}
+
+// START CAMERA
+startCamera();
+
+
+// CAPTURE IMAGE
+function captureImage(){
+
+let video=document.getElementById("camera");
+let canvas=document.getElementById("canvas");
+let context=canvas.getContext("2d");
+
+const maxWidth=1280;
+
+let width=video.videoWidth;
+let height=video.videoHeight;
+
+if(width>maxWidth){
+height=height*(maxWidth/width);
+width=maxWidth;
+}
+
+canvas.width=width;
+canvas.height=height;
+
+context.drawImage(video,0,0,width,height);
+
+let imageData=canvas.toDataURL("image/jpeg",0.6);
+
+document.getElementById("captured_image").value=imageData;
+
+document.getElementById("preview").src=imageData;
+
+alert("Image Captured Successfully!");
+
+}
+
+
+// COMPRESS UPLOAD IMAGE
+function compressUpload(event){
+
+const file=event.target.files[0];
+
+if(!file)return;
+
+const reader=new FileReader();
+
+reader.onload=function(e){
+
+const img=new Image();
+
+img.onload=function(){
+
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+const maxWidth=1280;
+
+let width=img.width;
+let height=img.height;
+
+if(width>maxWidth){
+height=height*(maxWidth/width);
+width=maxWidth;
+}
+
+canvas.width=width;
+canvas.height=height;
+
+ctx.drawImage(img,0,0,width,height);
+
+let compressedData=canvas.toDataURL("image/jpeg",0.6);
+
+document.getElementById("upload_preview").src=compressedData;
+
+document.getElementById("captured_image").value=compressedData;
+
+}
+
+img.src=e.target.result;
+
+}
+
+reader.readAsDataURL(file);
+
+}
+
 </script>
+
 {% if error %}
 <script>
-    alert("{{ error }}");
+alert("{{ error }}");
 </script>
 {% endif %}
 

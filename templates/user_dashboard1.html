@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Complaint Status</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:linear-gradient(to right,#1e90ff,#00c6ff);
+padding:40px;
+}
+
+table{
+width:100%;
+background:white;
+border-collapse:collapse;
+}
+
+th,td{
+padding:10px;
+border:1px solid #ddd;
+text-align:center;
+}
+
+th{
+background:#0077b6;
+color:white;
+}
+
+.pending{
+color:red;
+font-weight:bold;
+}
+
+.solved{
+color:green;
+font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>Complaint Details</h2>
+
+<table>
+
+<tr>
+<th>ID</th>
+<th>Area</th>
+<th>Fault</th>
+<th>Suggestion</th>
+<th>Status</th>
+</tr>
+
+{% for c in complaints %}
+
+<tr>
+
+<td>{{c.id}}</td>
+<td>{{c.area}}</td>
+<td>{{c.fault1}}</td>
+<td>{{c.suggestion}}</td>
+
+<td>
+{% if c.status == "Solved" %}
+<span class="solved">Solved</span>
+{% else %}
+<span class="pending">Pending</span>
+{% endif %}
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</body>
+</html>
