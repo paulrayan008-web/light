@@ -295,7 +295,7 @@ def predict_analysis():
             return render_template(
                 "complaint.html",
                 error="Invalid Image! Please upload a clear streetlight image."
-            )
+            )       
 
         # =========================
         # USER INPUT
