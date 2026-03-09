@@ -217,121 +217,146 @@ def predict_analysis():
     phone = session.get("verified_phone")
 
     # =========================
-    # FIRST: If GET → show page
+    # SHOW PAGE (GET)
     # =========================
     if request.method == "GET":
         return render_template("complaint.html")
 
-    # =========================
-    # ONLY POST BELOW
-    # =========================
+    try:
 
-    post_id = request.form.get("post_id")
+        post_id = request.form.get("post_id")
 
-    if not post_id:
-        return "<script>alert('Enter Post ID');window.location='/predict_analysis';</script>"
+        if not post_id:
+            return render_template("complaint.html", error="Enter Post ID")
 
-    db = get_db_connection()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    # Fetch post details
-    cursor.execute("SELECT * FROM post WHERE post_id=%s", (post_id,))
-    post_data = cursor.fetchone()
+        db = get_db_connection()
+        cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-    if not post_data:
-        db.close()
-        return "<script>alert('Invalid Post ID');window.location='/predict_analysis';</script>"
+        # =========================
+        # FETCH POST DETAILS
+        # =========================
+        cursor.execute("SELECT * FROM post WHERE post_id=%s", (post_id,))
+        post_data = cursor.fetchone()
 
-    area = post_data["area"]
-    employee_name = post_data["employee_name"]
+        if not post_data:
+            cursor.close()
+            db.close()
+            return render_template("complaint.html", error="Invalid Post ID")
 
-    # ======================================
-    # IMAGE HANDLING
-    # ======================================
-    import base64
-    from io import BytesIO
+        area = post_data["area"]
+        employee_name = post_data["employee_name"]
 
-    captured_image = request.form.get("captured_image")
-    image_file = request.files.get("image")
+        # =========================
+        # IMAGE HANDLING
+        # =========================
+        import base64
+        from io import BytesIO
 
-    if captured_image and captured_image.strip() != "":
-        image_data = captured_image.split(",")[1]
-        image = Image.open(BytesIO(base64.b64decode(image_data))).convert("RGB")
-        filename = post_id + "_camera.png"
+        captured_image = request.form.get("captured_image")
+        image_file = request.files.get("image")
 
-    elif image_file and image_file.filename != "":
-        image = Image.open(image_file).convert("RGB")
-        filename = post_id + "_" + image_file.filename
+        if captured_image:
+            image_data = captured_image.split(",")[1]
+            image = Image.open(BytesIO(base64.b64decode(image_data))).convert("RGB")
+            filename = f"{post_id}_camera.png"
 
-    else:
-        db.close()
-        return "<script>alert('Capture or Upload Image');window.location='/predict_analysis';</script>"
+        elif image_file and image_file.filename != "":
+            image = Image.open(image_file).convert("RGB")
+            filename = f"{post_id}_{image_file.filename}"
 
-    filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-    image.save(filepath)
+        else:
+            cursor.close()
+            db.close()
+            return render_template("complaint.html", error="Capture or Upload Image")
 
-    # ======================================
-    # CNN PREDICTION
-    # ======================================
-    image_tensor = transform(image).unsqueeze(0).to(device)
-    with torch.no_grad():
-        output = model(image_tensor)
-        probabilities = torch.softmax(output, dim=1)
-        confidence, predicted = torch.max(probabilities, 1)
+        # Resize image (reduces memory)
+        image = image.resize((224, 224))
 
-    fault = class_names[predicted.item()]
-    confidence_score = round(confidence.item() * 100, 2)
-    if confidence <0:
-        return render_template(
-            "complaint.html",
-              error="Invalid Image! Please upload a clear streetlight image."
+        filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        image.save(filepath)
+
+        # =========================
+        # CNN PREDICTION
+        # =========================
+        image_tensor = transform(image).unsqueeze(0).to(device)
+
+        with torch.no_grad():
+            output = model(image_tensor)
+            probabilities = torch.softmax(output, dim=1)
+            confidence, predicted = torch.max(probabilities, 1)
+
+        fault = class_names[predicted.item()]
+        confidence_score = round(confidence.item() * 100, 2)
+
+        # Reject low confidence
+        if confidence_score < 0:
+            cursor.close()
+            db.close()
+            return render_template(
+                "complaint.html",
+                error="Invalid Image! Please upload a clear streetlight image."
             )
 
-    # print("Prediction:", fault)
-    # print("Confidence:", confidence_score, "%")
-    
+        # =========================
+        # USER INPUT
+        # =========================
+        fault1 = request.form.get("fault1")
+        fault2 = request.form.get("fault2")
+        fault3 = request.form.get("fault3")
+        suggestion = request.form.get("suggestion")
 
-    # ======================================
-    # USER INPUT
-    # ======================================
-    fault1 = request.form.get("fault1")
-    fault2 = request.form.get("fault2")
-    fault3 = request.form.get("fault3")
-    suggestion = request.form.get("suggestion")
+        # =========================
+        # INSERT INTO DATABASE
+        # =========================
+        cursor.execute("""
+            INSERT INTO complaints
+            (phone, post_id, area, employee_name, cnn_result, confidence,
+             fault1, fault2, fault3, suggestion, image_path, status)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
+        """, (
+            phone,
+            post_id,
+            area,
+            employee_name,
+            fault,
+            confidence_score,
+            fault1,
+            fault2,
+            fault3,
+            suggestion,
+            "uploads/" + filename,
+            "Pending"
+        ))
 
-    # ======================================
-    # INSERT INTO DATABASE
-    # ======================================
-    cursor.execute("""
-        INSERT INTO complaints
-        (phone, post_id, area, employee_name, cnn_result, confidence,
-         fault1, fault2, fault3, suggestion, image_path, status)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)    RETURNING id
-    """  , (
-        phone, post_id, area, employee_name,
-        fault, confidence_score,
-        fault1, fault2, fault3,
-        suggestion,
-        "uploads/" + filename,   # ✅ FIXED IMAGE PATH
-        "Pending"
-    ))
+        complaint_id = cursor.fetchone()[0]
 
-    db.commit()
-    complaint_id = cursor.fetchone()[0]  # this gets the id column value
+        db.commit()
+        cursor.close()
+        db.close()
 
-    db.close()
-   
+        # =========================
+        # RETURN RESULT PAGE
+        # =========================
+        return render_template(
+            "complaint.html",
+            success="Complaint Submitted Successfully!",
+            fault=fault,
+            confidence=confidence_score,
+            area=area,
+            employee_name=employee_name,
+            image_path=url_for("static", filename="uploads/" + filename),
+            id=complaint_id
+        )
 
-    return render_template(
-        "complaint.html",
-        success="Complaint Submitted Successfully!",
-        fault=fault,
-        confidence=confidence_score,
-        area=area,
-        employee_name=employee_name,
-        image_path=url_for("static", filename="uploads/" + filename),
-        id=complaint_id   # ✅ PASS id
+    except Exception as e:
 
-    )
+        print("Prediction Error:", e)
+
+        return render_template(
+            "complaint.html",
+            error="Server Error during prediction. Please try again."
+        )
 #user dashboard
 @app.route('/user_login', methods=['GET','POST'])
 def user_login():
