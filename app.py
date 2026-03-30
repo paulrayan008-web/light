@@ -38,7 +38,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB ALLOWED
 
 
-API_KEY = "dbe2bec1-0dbf-11f1-bcb0-0200cd936042"
+API_KEY = "1247008d-1ca7-11f1-bcb0-0200cd936042"
 
 # =============================
 # DATABASE CONNECTION
@@ -213,7 +213,7 @@ def user():
 def predict_analysis():
 
     if "verified_phone" not in session:
-        return redirect("/")
+        return redirect(url_for("home"))
 
     phone = session.get("verified_phone")
 
@@ -288,6 +288,55 @@ def predict_analysis():
 
         fault = class_names[predicted.item()]
         confidence_score = round(confidence.item() * 100, 2)
+        # =========================
+        # ACTION DECISION SYSTEM
+
+        if fault == "Light_on":
+            if 80 <= confidence_score <= 100:
+                action = "Light operating but periodic inspection recommended."
+            elif 60 <= confidence_score < 80:
+                action = "Brightness slightly decreasing. Monitor the bulb condition."
+            elif 40 <= confidence_score < 60:
+                action = "Bulb efficiency may reduce soon. Schedule maintenance."
+            else:
+                action = "Image unclear. Please capture again."
+
+
+        elif fault == "low":
+            if 80 <= confidence_score <= 100:
+                action = "Low brightness detected. Replace bulb within 1–2 months."
+            elif 60 <= confidence_score < 80:
+                action = "Brightness decreasing. Maintenance recommended soon."
+            elif 40 <= confidence_score < 60:
+                action = "Possible low brightness. Technician inspection advised."
+            else:
+                action = "Image unclear. Capture clearer image."
+
+
+        elif fault == "Light_of":
+            if 80 <= confidence_score <= 100:
+                action = "Street light OFF. Immediate repair required."
+            elif 60 <= confidence_score < 80:
+                action = "Possible power failure. Electrical inspection required."
+            elif 40 <= confidence_score < 60:
+                action = "Possible intermittent power issue. Verify manually."
+            else:
+                action = "Image unclear. Please capture again."
+
+
+        elif fault == "Physical":
+            if 80 <= confidence_score <= 100:
+                action = "Physical damage detected. Replace fixture immediately."
+            elif 60 <= confidence_score < 80:
+                action = "Possible pole or fixture damage. Inspection required."
+            elif 40 <= confidence_score < 60:
+               action = "Minor structural issue suspected. Monitor condition."
+            else:
+               action = "Image unclear. Please capture again."
+
+
+        else:
+            action = "Fault condition could not be determined."
 
         # Reject low confidence
         if confidence_score < 0:
@@ -311,9 +360,9 @@ def predict_analysis():
         # =========================
         cursor.execute("""
             INSERT INTO complaints
-            (phone, post_id, area, employee_name, cnn_result, confidence,
+            (phone, post_id, area, employee_name, cnn_result, confidence,action,
              fault1, fault2, fault3, suggestion, image_path, status)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             RETURNING id
         """, (
             phone,
@@ -322,6 +371,7 @@ def predict_analysis():
             employee_name,
             fault,
             confidence_score,
+            action,
             fault1,
             fault2,
             fault3,
@@ -344,6 +394,7 @@ def predict_analysis():
             success="Complaint Submitted Successfully!",
             fault=fault,
             confidence=confidence_score,
+            action=action,
             area=area,
             employee_name=employee_name,
             image_path=url_for("static", filename="uploads/" + filename),
@@ -698,6 +749,8 @@ def generate_report(id):
     # CNN Results
     elements.append(Paragraph(f"<b>CNN Detected Issue:</b> {complaint.get('cnn_result', '')}", styles["Normal"]))
     elements.append(Paragraph(f"<b>CNN Confidence:</b> {complaint.get('confidence', '')}%", styles["Normal"]))
+    elements.append(Paragraph(f"<b>CNN Action:</b> {complaint.get('action', '')}", styles["Normal"]))
+
 
     # Employee & Status
     elements.append(Paragraph(f"<b>Assigned Employee:</b> {complaint.get('employee_name', '')}", styles["Normal"]))

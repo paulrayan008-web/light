@@ -17,55 +17,54 @@
 
         <h2>User Login</h2>
         <p>Enter your mobile number to receive OTP</p>
+<form method="POST">
 
-        <form method="POST">
+{% if not otp_sent %}
+    <!-- Phone Input -->
+    <div class="input-group">
+        <label>Mobile Number</label>
+        <input type="text"
+               name="phone"
+               placeholder="Enter 10 Digit Number"
+               maxlength="10"
+               pattern="[0-9]{10}"
+               required>
+    </div>
 
-            <!-- Phone -->
-            <div class="input-group">
-                <label>Mobile Number</label>
-                <input type="text"
-                       name="phone"
-                       value="{{ phone if phone else '' }}"
-                       placeholder="Enter 10 Digit Number"
-                       maxlength="10"
-                       pattern="[0-9]{10}"
-                       {% if otp_sent %} readonly {% endif %}
-                       required>
-            </div>
+    <button type="submit"
+            name="action"
+            value="send_otp"
+            class="btn primary">
+        Send OTP
+    </button>
 
-            <!-- Send OTP -->
-            <button type="submit"
-                    name="action"
-                    value="send_otp"
-                    class="btn primary">
-                Send OTP
-            </button>
+{% else %}
 
-            <!-- OTP Field (Visible only after send) -->
-            {% if otp_sent %}
-            <div class="input-group">
-                <label>Enter OTP</label>
-                <input type="text"
-                       name="entered_otp"
-                       placeholder="Enter OTP"
-                       maxlength="6"
-                       required>
-            </div>
+    <!-- OTP Input -->
+    <div class="input-group">
+        <label>Enter OTP</label>
+        <input type="text"
+               name="entered_otp"
+               placeholder="Enter OTP"
+               maxlength="6"
+               required>
+    </div>
 
-            <button type="submit"
-                    name="action"
-                    value="verify_otp"
-                    class="btn success">
-                Verify OTP
-            </button>
-            {% endif %}
+    <button type="submit"
+            name="action"
+            value="verify_otp"
+            class="btn success">
+        Verify OTP
+    </button>
 
-            <!-- Error Message -->
-            {% if error %}
-            <p class="error">{{ error }}</p>
-            {% endif %}
+{% endif %}
 
-        </form>
+<!-- Error Message -->
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+
+</form>
 
     </div>
 </section>

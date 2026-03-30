@@ -53,6 +53,7 @@ font-weight:bold;
 <th>ID</th>
 <th>Area</th>
 <th>Fault</th>
+<th>Action</th>
 <th>Suggestion</th>
 <th>Status</th>
 </tr>
@@ -63,11 +64,12 @@ font-weight:bold;
 
 <td>{{c.id}}</td>
 <td>{{c.area}}</td>
-<td>{{c.fault1}}</td>
+<td>{{c.cnn_result}}</td>
+<td>{{c.action}}</td>
 <td>{{c.suggestion}}</td>
 
 <td>
-{% if c.status == "Solved" %}
+{% if c.status == "Resolved" %}
 <span class="solved">Solved</span>
 {% else %}
 <span class="pending">Pending</span>

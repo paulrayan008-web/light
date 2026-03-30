@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Street Light Complaint</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/complaint.css') }}">
+<title>Street Light Complaint</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/complaint.css') }}">
+
 </head>
 
 <body>
@@ -15,9 +17,9 @@
 
 <!-- HOME BUTTON -->
 <div style="text-align:right; margin-bottom:15px;">
-    <a href="{{ url_for('home') }}">
-        <button type="button">🏠 Home</button>
-    </a>
+<a href="{{ url_for('home') }}">
+<button type="button">🏠 Home</button>
+</a>
 </div>
 
 <!-- POST ID -->
@@ -30,10 +32,14 @@
 <p><strong>Assigned Employee:</strong> {{ employee_name }}</p>
 {% endif %}
 
+<hr>
+
 <!-- CAMERA SECTION -->
+
 <h3>Live Camera</h3>
 
 <video id="camera" width="300" autoplay playsinline></video>
+
 <br><br>
 
 <button type="button" onclick="captureImage()">Capture Image</button>
@@ -50,9 +56,11 @@
 <hr>
 
 <!-- UPLOAD IMAGE -->
+
 <h3>Or Upload Image</h3>
 
 <input type="file" name="image" accept="image/*" onchange="compressUpload(event)">
+
 <br><br>
 
 <img id="upload_preview" width="300">
@@ -60,6 +68,7 @@
 <hr>
 
 <!-- FAULT SELECTION -->
+
 <h3>Select Faults</h3>
 
 <label>
@@ -80,6 +89,7 @@ Pole Damage
 <br>
 
 <!-- SUGGESTION -->
+
 <textarea name="suggestion" placeholder="Enter Suggestion"></textarea>
 
 <br><br>
@@ -88,16 +98,25 @@ Pole Damage
 
 </form>
 
-<!-- AI RESULT -->
+<!-- ========================= -->
+<!-- AI RESULT SECTION -->
+<!-- ========================= -->
+
 {% if fault %}
 
 <hr>
 
 <h3>AI Detection Result</h3>
 
-<p><strong>Status:</strong> {{ fault }}</p>
+<p><strong>Detected Fault :</strong> {{ fault }}</p>
 
-<p><strong>Confidence:</strong> {{ confidence }}%</p>
+<p><strong>Confidence :</strong> {{ confidence }}%</p>
+
+{% if action %}
+<p><strong>Recommended Action :</strong> {{ action }}</p>
+{% endif %}
+
+<br>
 
 <img src="{{ image_path }}" width="300">
 
@@ -108,6 +127,8 @@ Pole Damage
 </a>
 
 {% endif %}
+
+<!-- SUCCESS MESSAGE -->
 
 {% if success %}
 <script>
@@ -120,12 +141,13 @@ alert("{{ success }}");
 <script>
 
 let currentStream;
-let currentFacingMode = "environment"; // back camera first
+let currentFacingMode="environment";
 
+// START CAMERA
 function startCamera(){
 
 if(currentStream){
-currentStream.getTracks().forEach(track => track.stop());
+currentStream.getTracks().forEach(track=>track.stop());
 }
 
 navigator.mediaDevices.getUserMedia({
@@ -154,7 +176,7 @@ startCamera();
 
 }
 
-// START CAMERA
+// INITIAL CAMERA START
 startCamera();
 
 
